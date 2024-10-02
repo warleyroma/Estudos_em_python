@@ -5,8 +5,8 @@ from dash import dcc, html
 from dash.dependencies import Input, Output
 import numpy as np
 
-# Carregar o arquivo CSV
-df = pd.read_csv(r'C:\projct\projpython\Estudos_em_python\estudo 2\houses_to_rent.csv')
+url = "https://raw.githubusercontent.com/warleyroma/Estudos_em_python/main/estudo%202/houses_to_rent.csv"
+df = pd.read_csv(url)
 
 # Limpeza de dados com regex=True para remover o símbolo R$ e as vírgulas
 df['rent amount'] = df['rent amount'].str.replace(r'R\$', '', regex=True).str.replace(',', '').astype(float)
