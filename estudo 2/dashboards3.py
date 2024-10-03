@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 
 # Configuração da página
 st.set_page_config(page_title="Dashboard de Aluguel", layout="wide")
@@ -11,19 +14,21 @@ url = "https://raw.githubusercontent.com/warleyroma/Estudos_em_python/main/estud
 df = pd.read_csv(url)
 
 # Limpeza e ajustes nos dados
-df['rent amount'] = df['rent amount'].str.replace('R\$', '', regex=True)
-df['rent amount'] = pd.to_numeric(df['rent amount'].str.replace(',', '').str.strip())
+df['rent amount'] = df['rent amount'].str.replace('R$', '', regex=True)
+df['rent amount'] = pd.to_numeric(df['rent amount'].str.replace('R$', '').str.replace(',', '').str.strip())
+
 
 # Tratar valores não numéricos nas colunas 'hoa' e 'property tax'
 df['hoa'] = df['hoa'].replace('Sem info', None)
 df['property tax'] = df['property tax'].replace('Sem info', None)
 
 # Converter para numérico
-df['hoa'] = pd.to_numeric(df['hoa'].str.replace('R\$', '', regex=True).str.replace(',', '').str.strip(), errors='coerce')
-df['property tax'] = pd.to_numeric(df['property tax'].str.replace('R\$', '', regex=True).str.replace(',', '').str.strip(), errors='coerce')
+df['hoa'] = pd.to_numeric(df['hoa'].str.replace('R$', '', regex=True).str.replace(',', '').str.strip(), errors='coerce')
+df['property tax'] = pd.to_numeric(df['property tax'].str.replace('R$', '', regex=True).str.replace(',', '').str.strip(), errors='coerce')
 
 # Filtrar os dados para a cidade 0
 df_city_0 = df[df['city'] == 0]
+
 
 # Insights para a cidade 0
 mean_rent_city_0 = df_city_0['rent amount'].mean()
@@ -155,17 +160,24 @@ def create_donut_chart(percentage, city_label, colors):
 # Gráfico de barras: Comparação entre Número de Quartos e Aluguel Médio
 st.markdown("<h2 style='text-align: center;'>Comparação entre Número de Quartos e Aluguel Médio nas Cidades</h2>", unsafe_allow_html=True)
 
+
+
 # Calcular a média do aluguel por número de quartos para cada cidade
 rent_by_rooms = df.groupby(['city', 'rooms'])['rent amount'].mean().reset_index()
 
+# Calcular a média do aluguel por número de quartos para cada cidade
+rent_by_rooms = df.query('rooms != 9').groupby(['city', 'rooms'])['rent amount'].mean().reset_index()
+
+
 # Gráfico de barras
 fig_rent_bar = px.bar(
-    rent_by_rooms,
+   rent_by_rooms,
     x='rooms',
     y='rent amount',
     color='city',
-    barmode='group',
-    labels={'rent amount': 'Aluguel Médio (R$)', 'rooms': 'Número de Quartos'}
+    barmode='stack',
+    labels={'rent amount': 'Aluguel Médio (R$)', 'rooms': 'Número de Quartos'},
+    color_discrete_map=['#83c9ff', '#0068c9', '#ff69b4']  # Cores fixas para cada cidade
 )
 
 # Ajustando a legenda e removendo a barra branca
@@ -176,10 +188,12 @@ fig_rent_bar.update_layout(
         title_font=dict(size=16),
         font=dict(size=14),
         bordercolor='Black',
-        borderwidth=1,
+        borderwidth=1, 
+        
     ),
     
-    margin=dict(l=40, r=40, t=40, b=40),  # Ajustando margens
+    margin=dict(l=40, r=40, t=40, b=40),
+   
 )
 
 # Ajustando a largura das barras
@@ -256,3 +270,28 @@ fig_animal_bar.update_layout(
 )
 
 st.plotly_chart(fig_animal_bar, use_container_width=True)
+
+
+# Adicionar descrição do cenário
+st.markdown(f"""
+### Descrição do Cenário: Mercado de Aluguel
+
+O mercado de aluguel de imóveis é um setor dinâmico e vital para a economia urbana, refletindo as condições sociais e econômicas de uma região. A base de dados analisada, que contém informações sobre imóveis para aluguel, oferece uma visão abrangente do cenário de habitação nas cidades abordadas.
+
+Com a crescente urbanização e o aumento da demanda por habitação, o mercado de aluguel tem se tornado cada vez mais competitivo. Nesta análise, focamos principalmente na Cidade 0 e Cidade 1, onde observamos uma série de tendências que moldam o mercado atual.
+
+#### Tendências de Preços de Aluguel:
+
+- **Aumento nos Preços:** Nas últimas temporadas, a média do aluguel na Cidade 0 apresentou uma tendência de aumento, refletindo uma demanda maior do que a oferta disponível. O preço médio de aluguel registrado foi de **R$ {mean_rent_city_0:,.2f}**.
+  
+- **Comparação com a Cidade 1:** Em comparação, a Cidade 1 apresenta um cenário diferente, onde os preços se mantiveram estáveis, com uma média de **R$ {mean_rent_city_1:,.2f}**. Essa diferença pode ser atribuída a fatores como a localização, a infraestrutura disponível e a oferta de imóveis.
+
+#### Demografia e Preferências dos Inquilinos:
+
+- **Preferências de Mobiliado:** A análise dos dados mostra que uma parcela significativa dos inquilinos prefere imóveis mobiliados, com aproximadamente **{percentage_furnished_city_0:.2f}%** dos imóveis disponíveis nessa categoria. Essa preferência é especialmente notável na Cidade 0, onde o aluguel de imóveis mobiliados está em ascensão.
+
+- **Animais de Estimação:** Outro fator importante a considerar é a aceitação de animais de estimação. Os dados indicam que **{(accept_animals_city_0/total_properties_city_0) * 100:.2f}%** dos imóveis na Cidade 0 aceitam animais, refletindo uma mudança nas preferências dos inquilinos que buscam um lar que acomode seus pets.
+
+#### Desafios do Mercado de Aluguel:
+Apesar das oportunidades, o mercado de aluguel também enfrenta desafios significativos, como a crescente pressão por preços mais altos e a escassez de imóveis disponíveis em áreas desejáveis. Isso torna essencial para os inquilinos uma análise cuidadosa de suas opções e um planejamento estratégico em suas decisões de aluguel.
+""")
